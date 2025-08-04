@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Proteger API Keys y configuraciones sensibles
+lib/core/constants/mapbox_config.dart

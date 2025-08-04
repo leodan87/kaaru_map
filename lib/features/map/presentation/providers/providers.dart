@@ -12,14 +12,14 @@ class MapProvider extends ChangeNotifier {
   MapboxMap? _mapboxController;
   geo.Position? _currentPosition;
   StreamSubscription<geo.Position>? _positionStream;
-  geo.Position? _lastKnownPosition; // Para centrado rápido sin delay
+  geo.Position? _lastKnownPosition; // Para centrado rapido sin delay
   Timer? _gpsMonitor; // Monitoreo simple del GPS
 
   // Estado de los permisos y servicios de GPS
   bool _isGpsActive = false;
   bool _hasPermissions = false;
   bool _isLocationServiceEnabled = false;
-  bool _wasGpsEnabled = false; // Para detectar reactivación
+  bool _wasGpsEnabled = false; // Para detectar reactivacion
 
   // Getters para acceder al estado desde fuera de la clase
   bool get isGpsActive => _isGpsActive;
@@ -31,24 +31,28 @@ class MapProvider extends ChangeNotifier {
   void setMapboxController(MapboxMap controller) {
     _mapboxController = controller;
     notifyListeners();
-    
-    // Auto-centrar si GPS está activo
+
+    // Auto-centrar si GPS esta activo
     _autoCenter();
-    
+
     // Iniciar monitoreo simple del GPS
     _startGpsMonitoring();
   }
 
-  // Centra el mapa automáticamente al cargar la app
+  // Centra el mapa automaticamente al cargar la app
   Future<void> _autoCenter() async {
     try {
       final serviceEnabled = await geo.Geolocator.isLocationServiceEnabled();
       final permission = await geo.Geolocator.checkPermission();
-      
-      if (serviceEnabled && (permission == geo.LocationPermission.whileInUse || permission == geo.LocationPermission.always)) {
+
+      if (serviceEnabled &&
+          (permission == geo.LocationPermission.whileInUse ||
+              permission == geo.LocationPermission.always)) {
         final position = await geo.Geolocator.getCurrentPosition();
         final camera = CameraOptions(
-          center: Point(coordinates: Position(position.longitude, position.latitude)),
+          center: Point(
+            coordinates: Position(position.longitude, position.latitude),
+          ),
           zoom: MapBoxConfig.defaultZoom,
         );
         _mapboxController!.setCamera(camera);
@@ -65,16 +69,20 @@ class MapProvider extends ChangeNotifier {
     _gpsMonitor = Timer.periodic(const Duration(seconds: 3), (timer) async {
       try {
         final isEnabled = await geo.Geolocator.isLocationServiceEnabled();
-        
-        // Si GPS se reactivó y tenemos mapa
+
+        // Si GPS se reactivo y tenemos mapa
         if (!_wasGpsEnabled && isEnabled && _mapboxController != null) {
           final permission = await geo.Geolocator.checkPermission();
-          if (permission == geo.LocationPermission.whileInUse || permission == geo.LocationPermission.always) {
-            developer.log('🚀 GPS reactivado - Auto-centrando', name: 'MapProvider');
+          if (permission == geo.LocationPermission.whileInUse ||
+              permission == geo.LocationPermission.always) {
+            developer.log(
+              'GPS reactivado - Auto-centrando',
+              name: 'MapProvider',
+            );
             await _centerMapInstant();
           }
         }
-        
+
         _wasGpsEnabled = isEnabled;
         _isLocationServiceEnabled = isEnabled;
       } catch (e) {
@@ -83,52 +91,57 @@ class MapProvider extends ChangeNotifier {
     });
   }
 
-  // Centra el mapa súper rápido usando ubicación guardada
+  // Centra el mapa super rapido usando ubicacion guardada
   Future<void> _centerMapInstant() async {
     if (_mapboxController == null) return;
 
     try {
       geo.Position position;
-      
-      // Usar cache si existe (RÁPIDO)
+
+      // Usar cache si existe (RAPIDO)
       if (_lastKnownPosition != null) {
         position = _lastKnownPosition!;
       } else {
         // Solo si no hay cache
         position = await geo.Geolocator.getCurrentPosition(
-          desiredAccuracy: geo.LocationAccuracy.medium,
-          timeLimit: const Duration(seconds: 5),
+          locationSettings: const geo.LocationSettings(
+            accuracy: geo.LocationAccuracy.medium,
+            timeLimit: Duration(seconds: 5),
+          ),
         );
         _lastKnownPosition = position;
       }
-      
-      // Centrado instantáneo
+
+      // Centrado instantaneo
       final camera = CameraOptions(
-        center: Point(coordinates: Position(position.longitude, position.latitude)),
+        center: Point(
+          coordinates: Position(position.longitude, position.latitude),
+        ),
         zoom: MapBoxConfig.defaultZoom,
       );
-      
+
       await _mapboxController!.setCamera(camera);
       _currentPosition = position;
       notifyListeners();
-      
+
       // Actualizar cache en background
       _updateCacheInBackground();
-      
     } catch (e) {
       developer.log('Error en centrado: $e', name: 'MapProvider');
     }
   }
 
-  // Actualiza la ubicación guardada sin bloquear la app
+  // Actualiza la ubicacion guardada sin bloquear la app
   void _updateCacheInBackground() {
-    geo.Geolocator.getCurrentPosition().then((position) {
-      _lastKnownPosition = position;
-      _currentPosition = position;
-    }).catchError((_) {});
+    geo.Geolocator.getCurrentPosition()
+        .then((position) {
+          _lastKnownPosition = position;
+          _currentPosition = position;
+        })
+        .catchError((_) {});
   }
 
-  // Pide permisos de ubicación y centra automáticamente si acepta
+  // Pide permisos de ubicacion y centra automaticamente si acepta
   Future<bool> checkPermissions() async {
     try {
       final serviceEnabled = await geo.Geolocator.isLocationServiceEnabled();
@@ -157,11 +170,11 @@ class MapProvider extends ChangeNotifier {
       _hasPermissions = true;
       _isGpsActive = serviceEnabled;
       notifyListeners();
-      
+
       if (_mapboxController != null) {
         await _centerMapInstant();
       }
-      
+
       return true;
     } catch (e) {
       _hasPermissions = false;
@@ -171,20 +184,20 @@ class MapProvider extends ChangeNotifier {
     }
   }
 
-  // Verifica si ya tienes permisos de ubicación
+  // Verifica si ya tienes permisos de ubicacion
   Future<bool> hasLocationPermission() async {
     return await checkPermissions();
   }
 
-  // Se ejecuta cuando presionas el botón de ubicación
+  // Se ejecuta cuando presionas el boton de ubicacion
   Future<void> centerMapOnUser() async {
     if (_mapboxController == null) return;
 
     try {
-      // Activar GPS si está desactivado
+      // Activar GPS si esta desactivado
       final location = loc.Location();
       bool serviceEnabled = await location.serviceEnabled();
-      
+
       if (!serviceEnabled) {
         serviceEnabled = await location.requestService();
         if (!serviceEnabled) return;
@@ -194,14 +207,18 @@ class MapProvider extends ChangeNotifier {
       bool hasPermissions = await checkPermissions();
       if (!hasPermissions) return;
 
-      // Centrar usando cache (RÁPIDO)
+      // Centrar usando cache (RAPIDO)
       await _centerMapInstant();
-      
     } catch (e) {
-      // Fallback con última posición conocida
+      // Fallback con ultima posicion conocida
       if (_lastKnownPosition != null) {
         final camera = CameraOptions(
-          center: Point(coordinates: Position(_lastKnownPosition!.longitude, _lastKnownPosition!.latitude)),
+          center: Point(
+            coordinates: Position(
+              _lastKnownPosition!.longitude,
+              _lastKnownPosition!.latitude,
+            ),
+          ),
           zoom: MapBoxConfig.defaultZoom,
         );
         await _mapboxController!.setCamera(camera);
@@ -209,13 +226,13 @@ class MapProvider extends ChangeNotifier {
     }
   }
 
-  /// Inicia el stream de ubicación con auto-centrado
+  /// Inicia el stream de ubicacion con auto-centrado
   Future<void> startLocationUpdatesWithAutoCenter() async {
     _isGpsActive = true;
     await startLocationUpdates();
   }
 
-  /// Inicia el stream para recibir actualizaciones de ubicación
+  /// Inicia el stream para recibir actualizaciones de ubicacion
   Future<void> startLocationUpdates() async {
     if (!await checkPermissions()) return;
 
@@ -226,25 +243,29 @@ class MapProvider extends ChangeNotifier {
       distanceFilter: 10,
     );
 
-    _positionStream = geo.Geolocator.getPositionStream(locationSettings: settings).listen(
-      (geo.Position position) {
-        _currentPosition = position;
-        _lastKnownPosition = position; // Mantener cache actualizado
-        notifyListeners();
+    _positionStream =
+        geo.Geolocator.getPositionStream(locationSettings: settings).listen(
+          (geo.Position position) {
+            _currentPosition = position;
+            _lastKnownPosition = position; // Mantener cache actualizado
+            notifyListeners();
 
-        if (_mapboxController != null) {
-          if (_isGpsActive) {
-            _updateMapLocationWithForceCenter(position);
-            _isGpsActive = false;
-          } else {
-            _updateMapLocation(position);
-          }
-        }
-      },
-      onError: (error) {
-        developer.log('Error en stream de ubicación: $error', name: 'MapProvider');
-      },
-    );
+            if (_mapboxController != null) {
+              if (_isGpsActive) {
+                _updateMapLocationWithForceCenter(position);
+                _isGpsActive = false;
+              } else {
+                _updateMapLocation(position);
+              }
+            }
+          },
+          onError: (error) {
+            developer.log(
+              'Error en stream de ubicacion: $error',
+              name: 'MapProvider',
+            );
+          },
+        );
   }
 
   /// Actualiza mapa con centrado forzado
@@ -252,25 +273,29 @@ class MapProvider extends ChangeNotifier {
     if (_mapboxController == null) return;
 
     final camera = CameraOptions(
-      center: Point(coordinates: Position(position.longitude, position.latitude)),
+      center: Point(
+        coordinates: Position(position.longitude, position.latitude),
+      ),
       zoom: MapBoxConfig.defaultZoom,
     );
 
     _mapboxController!.flyTo(camera, MapAnimationOptions(duration: 800));
   }
 
-  /// Actualiza ubicación normal
+  /// Actualiza ubicacion normal
   void _updateMapLocation(geo.Position position) {
     if (_mapboxController == null) return;
 
     final camera = CameraOptions(
-      center: Point(coordinates: Position(position.longitude, position.latitude)),
+      center: Point(
+        coordinates: Position(position.longitude, position.latitude),
+      ),
     );
 
     _mapboxController!.easeTo(camera, MapAnimationOptions(duration: 1000));
   }
 
-  /// Detiene actualizaciones de ubicación
+  /// Detiene actualizaciones de ubicacion
   void stopLocationUpdates() {
     _positionStream?.cancel();
     _positionStream = null;

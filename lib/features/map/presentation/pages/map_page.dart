@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../providers/map_provider.dart';
+import '../providers/providers.dart';
 import '../widgets/map_container.dart';
 import 'package:kaaru_map/core/constants/app_colors.dart';
 
@@ -42,7 +41,7 @@ class _MapPageViewState extends State<MapPageView> {
         children: [
           // Mapa principal
           const MapContainer(),
-          
+
           // Botón para centrar el mapa
           Positioned(
             bottom: 50,
@@ -57,8 +56,8 @@ class _MapPageViewState extends State<MapPageView> {
               elevation: 4,
               shape: const CircleBorder(),
               child: const Icon(
-                Icons.my_location, 
-                color: Colors.white, 
+                Icons.my_location,
+                color: Colors.white,
                 size: 18,
               ),
             ),

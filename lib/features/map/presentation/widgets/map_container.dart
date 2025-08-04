@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart' as geo;
-
-import '../providers/map_provider.dart';
+import '../providers/providers.dart';
 import 'package:kaaru_map/core/constants/mapbox_config.dart';
 
 /// Widget contenedor del mapa Mapbox
@@ -25,7 +24,12 @@ class _MapContainerState extends State<MapContainer> {
     return MapWidget(
       key: const ValueKey("mapWidget"),
       cameraOptions: CameraOptions(
-        center: Point(coordinates: Position(MapBoxConfig.fallbackLongitude, MapBoxConfig.fallbackLatitude)),
+        center: Point(
+          coordinates: Position(
+            MapBoxConfig.fallbackLongitude,
+            MapBoxConfig.fallbackLatitude,
+          ),
+        ),
         zoom: MapBoxConfig.defaultZoom,
       ),
       styleUri: MapboxStyles.MAPBOX_STREETS,
@@ -45,9 +49,14 @@ class _MapContainerState extends State<MapContainer> {
       await mapboxMap.scaleBar.updateSettings(ScaleBarSettings(enabled: false));
       await mapboxMap.compass.updateSettings(CompassSettings(enabled: false));
       await mapboxMap.logo.updateSettings(LogoSettings(enabled: false));
-      await mapboxMap.attribution.updateSettings(AttributionSettings(enabled: false));
+      await mapboxMap.attribution.updateSettings(
+        AttributionSettings(enabled: false),
+      );
     } catch (e) {
-      developer.log('Error deshabilitando elementos UI: $e', name: 'MapContainer');
+      developer.log(
+        'Error deshabilitando elementos UI: $e',
+        name: 'MapContainer',
+      );
     }
 
     // Inicializar ubicación del usuario
@@ -72,11 +81,13 @@ class _MapContainerState extends State<MapContainer> {
 
   // Detecta automáticamente si enciendes/apagas el GPS
   void _startGpsStatusListener() {
-    _gpsStatusSubscription = geo.Geolocator.getServiceStatusStream().listen((status) {
+    _gpsStatusSubscription = geo.Geolocator.getServiceStatusStream().listen((
+      status,
+    ) {
       final gpsOn = status == geo.ServiceStatus.enabled;
       _updateAccuracyRingBasedOnGPS(gpsOn);
     });
-    
+
     _checkInitialGpsState();
   }
 
